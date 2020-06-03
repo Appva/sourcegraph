@@ -194,6 +194,21 @@ func shortGitCommandSlow(args []string) time.Duration {
 // be run in the background.
 var longGitCommandTimeout = time.Hour
 
+type log struct{ mux http.Handler }
+
+func (l *log) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	extra := ""
+	rc := r.WithContext(context.WithValue(r.Context(), "extra", &extra))
+	start := time.Now()
+	l.mux.ServeHTTP(w, rc)
+	line := fmt.Sprintf("%s %s (%s)", rc.Method, rc.URL.Path, time.Since(start))
+	if extra != "" {
+		log15.Debug(line, "extra", extra)
+	} else {
+		log15.Debug(line)
+	}
+}
+
 // Handler returns the http.Handler that should be used to serve requests.
 func (s *Server) Handler() http.Handler {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
@@ -243,7 +258,7 @@ func (s *Server) Handler() http.Handler {
 		Dir: func(d string) string { return string(s.dir(api.RepoName(d))) },
 	}))
 
-	return mux
+	return &log{mux}
 }
 
 // Janitor does clean up tasks over s.ReposDir.
@@ -543,6 +558,8 @@ func (s *Server) exec(w http.ResponseWriter, r *http.Request, req *protocol.Exec
 			cmd = req.Args[0]
 		}
 		args := strings.Join(req.Args, " ")
+
+		*(ctx.Value("extra").(*string)) = fmt.Sprintf("repo: %s; args: %s", req.Repo, strings.Join(req.Args, " "))
 
 		var tr *trace.Trace
 		tr, ctx = trace.New(ctx, "exec."+cmd, string(req.Repo))

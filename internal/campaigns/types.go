@@ -360,6 +360,9 @@ type Changeset struct {
 	ExternalCheckState  ChangesetCheckState
 	CreatedByCampaign   bool
 	AddedToCampaign     bool
+	DiffStatAdded       *int32
+	DiffStatChanged     *int32
+	DiffStatDeleted     *int32
 }
 
 // Clone returns a clone of a Changeset.

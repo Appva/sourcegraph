@@ -10,6 +10,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
+	"github.com/sourcegraph/go-diff/diff"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/backend"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/db"
 	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
@@ -409,6 +410,17 @@ func (r *changesetResolver) Diff(ctx context.Context) (*graphqlbackend.Repositor
 		Base: &base,
 		Head: &head,
 	})
+}
+
+func (r *changesetResolver) DiffStat(ctx context.Context) (*graphqlbackend.DiffStat, error) {
+	if r.DiffStatAdded == nil || r.DiffStatChanged == nil || r.DiffStatDeleted == nil {
+		return nil, nil
+	}
+	return graphqlbackend.NewDiffStat(diff.Stat{
+		Added:   *r.DiffStatAdded,
+		Changed: *r.DiffStatChanged,
+		Deleted: *r.DiffStatDeleted,
+	}), nil
 }
 
 func (r *changesetResolver) Head(ctx context.Context) (*graphqlbackend.GitRefResolver, error) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/inconshreveable/log15"
 	"github.com/pkg/errors"
+	"github.com/sourcegraph/go-diff/diff"
 	"github.com/sourcegraph/sourcegraph/internal/campaigns"
 	cmpgn "github.com/sourcegraph/sourcegraph/internal/campaigns"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc"
@@ -15,7 +16,7 @@ import (
 )
 
 // SetDerivedState will update the external state fields on the Changeset based
-// on the current  state of the changeset and associated events.
+// on the current state of the changeset and associated events.
 func SetDerivedState(c *cmpgn.Changeset, es []*cmpgn.ChangesetEvent) {
 	// Copy so that we can sort without mutating the argument
 	events := make(ChangesetEvents, len(es))
@@ -39,6 +40,14 @@ func SetDerivedState(c *cmpgn.Changeset, es []*cmpgn.ChangesetEvent) {
 		log15.Warn("Computing changeset review state", "err", err)
 	} else {
 		c.ExternalReviewState = state
+	}
+
+	if stat, err := ComputeDiffStat(c); err != nil {
+		log15.Warn("Computing changeset diff stat", "err", err)
+	} else {
+		c.DiffStatAdded = &stat.Added
+		c.DiffStatChanged = &stat.Changed
+		c.DiffStatDeleted = &stat.Deleted
 	}
 }
 
@@ -390,4 +399,8 @@ func computeReviewState(statesByAuthor map[string]campaigns.ChangesetReviewState
 
 func unixMilliToTime(ms int64) time.Time {
 	return time.Unix(0, ms*int64(time.Millisecond))
+}
+
+func ComputeDiffStat(c *cmpgn.Changeset) (diff.Stat, error) {
+	return nil, nil
 }
