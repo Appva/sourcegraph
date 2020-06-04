@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"sync"
@@ -297,12 +298,16 @@ func (r *campaignResolver) DiffStat(ctx context.Context) (*graphqlbackend.DiffSt
 
 	totalStat := &graphqlbackend.DiffStat{}
 	for _, cs := range changesets {
-		stat, err := cs.DiffStat(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if stat != nil {
-			totalStat.AddDiffStat(stat)
+		if external, ok := cs.ToExternalChangeset(); ok && external != nil {
+			stat, err := external.DiffStat(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if stat != nil {
+				totalStat.AddDiffStat(stat)
+			}
+		} else {
+			return nil, errors.New("cannot convert ChangesetResolver to ExternalChangesetResolver")
 		}
 	}
 
