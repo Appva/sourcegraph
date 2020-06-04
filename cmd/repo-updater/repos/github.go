@@ -277,6 +277,8 @@ func (s GithubSource) LoadChangesets(ctx context.Context, cs ...*Changeset) erro
 		// cached diffstat.
 		if true || hasDiffChanged(cs[i], prs[i]) {
 			log15.Info("diff has changed; pulling", "changeset", cs[i].Changeset.ID)
+			// TODO: remove GraphQL calls; we should be able to do this more
+			// efficiently by talking to gitserver directly.
 			rr, err := graphqlbackend.RepositoryByIDInt32(ctx, cs[i].RepoID)
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("getting repository resolver for repo ID %d", cs[i].RepoID))

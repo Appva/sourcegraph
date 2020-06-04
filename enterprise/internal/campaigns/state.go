@@ -41,14 +41,6 @@ func SetDerivedState(c *cmpgn.Changeset, es []*cmpgn.ChangesetEvent) {
 	} else {
 		c.ExternalReviewState = state
 	}
-
-	if stat, err := ComputeDiffStat(c); err != nil {
-		log15.Warn("Computing changeset diff stat", "err", err)
-	} else {
-		c.DiffStatAdded = &stat.Added
-		c.DiffStatChanged = &stat.Changed
-		c.DiffStatDeleted = &stat.Deleted
-	}
 }
 
 // ComputeCheckState computes the overall check state based on the current synced check state
