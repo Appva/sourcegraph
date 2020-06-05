@@ -640,12 +640,6 @@ func (r *DiffStat) AddDiffStat(s *DiffStat) {
 	r.deleted += s.Deleted()
 }
 
-func (r *DiffStat) ToDiffStat() diff.Stat {
-	return diff.Stat{
-		Added: r.added, Changed: r.changed, Deleted: r.deleted,
-	}
-}
-
 func (r *DiffStat) Added() int32   { return r.added }
 func (r *DiffStat) Changed() int32 { return r.changed }
 func (r *DiffStat) Deleted() int32 { return r.deleted }
