@@ -372,12 +372,16 @@ func (c *Changeset) Clone() *Changeset {
 	return &tt
 }
 
-func (c *Changeset) SetDiffStat(stat diff.Stat) {
-	log15.Info("about to update diff stat", "changeset", c.ID, "added", c.DiffStatAdded, "changed", c.DiffStatChanged, "deleted", c.DiffStatDeleted)
-	c.DiffStatAdded = &stat.Added
-	c.DiffStatChanged = &stat.Changed
-	c.DiffStatDeleted = &stat.Deleted
-	log15.Info("done updating diff stat", "changeset", c.ID, "added", c.DiffStatAdded, "changed", c.DiffStatChanged, "deleted", c.DiffStatDeleted)
+func (c *Changeset) SetDiffStat(stat *diff.Stat) {
+	if stat == nil {
+		c.DiffStatAdded = nil
+		c.DiffStatChanged = nil
+		c.DiffStatDeleted = nil
+	} else {
+		c.DiffStatAdded = &stat.Added
+		c.DiffStatChanged = &stat.Changed
+		c.DiffStatDeleted = &stat.Deleted
+	}
 }
 
 func (c *Changeset) SetMetadata(meta interface{}) error {

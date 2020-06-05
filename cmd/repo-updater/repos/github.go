@@ -12,7 +12,7 @@ import (
 
 	"github.com/inconshreveable/log15"
 	"github.com/pkg/errors"
-	"github.com/sourcegraph/sourcegraph/cmd/frontend/graphqlbackend"
+	"github.com/sourcegraph/sourcegraph/internal/campaigns"
 	"github.com/sourcegraph/sourcegraph/internal/conf/reposource"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc/github"
@@ -222,28 +222,6 @@ func (s GithubSource) CloseChangeset(ctx context.Context, c *Changeset) error {
 	return nil
 }
 
-func hasDiffChanged(old *Changeset, updated *github.PullRequest) bool {
-	// If the changeset doesn't have a diffstat, we'll just update regardless.
-	// TODO: should we have the same behaviour if all values are 0?
-	if old.DiffStatAdded == nil || old.DiffStatChanged == nil || old.DiffStatDeleted == nil {
-		return true
-	}
-
-	// If we get an error getting the base or head OID, then we'll just update
-	// no matter what.
-	oldBase, err := old.BaseRefOid()
-	if err != nil {
-		return true
-	}
-
-	oldHead, err := old.HeadRefOid()
-	if err != nil {
-		return true
-	}
-
-	return oldBase != updated.BaseRefOid || oldHead != updated.HeadRefOid
-}
-
 // LoadChangesets loads the latest state of the given Changesets from the codehost.
 func (s GithubSource) LoadChangesets(ctx context.Context, cs ...*Changeset) error {
 	prs := make([]*github.PullRequest, len(cs))
@@ -272,45 +250,42 @@ func (s GithubSource) LoadChangesets(ctx context.Context, cs ...*Changeset) erro
 	}
 
 	for i := range cs {
-		log15.Info("performing post-pull tasks", "changeset", cs[i].Changeset.ID)
-		// Compare new and old metadata and figure out if we have to refresh the
-		// cached diffstat.
-		if true || hasDiffChanged(cs[i], prs[i]) {
-			log15.Info("diff has changed; pulling", "changeset", cs[i].Changeset.ID)
-			// TODO: remove GraphQL calls; we should be able to do this more
-			// efficiently by talking to gitserver directly.
-			rr, err := graphqlbackend.RepositoryByIDInt32(ctx, cs[i].RepoID)
+		if hasGitHubDiffChanged(cs[i].Changeset, prs[i]) {
+			stat, err := computeGitDiffStat(ctx, cs[i].Repo, prs[i].BaseRefOid, prs[i].HeadRefOid)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("getting repository resolver for repo ID %d", cs[i].RepoID))
+				return errors.Wrap(err, "updating changeset diffstat")
 			}
-
-			cmp, err := graphqlbackend.NewRepositoryComparison(ctx, rr, &graphqlbackend.RepositoryComparisonInput{
-				Base: &prs[i].BaseRefOid,
-				Head: &prs[i].HeadRefOid,
-			})
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("comparing base %s to head %s", prs[i].BaseRefOid, prs[i].HeadRefOid))
-			}
-
-			fd := cmp.FileDiffs(&graphqlbackend.FileDiffsConnectionArgs{})
-			stat, err := fd.DiffStat(ctx)
-			if err != nil {
-				return errors.Wrap(err, "computing diffstat")
-			}
-			// TODO: this is always resulting in zeroes right now; need to
-			// investigate why.
-			cs[i].SetDiffStat(stat.ToDiffStat())
-			log15.Info("updated diffstat", "changeset", cs[i].Changeset.ID, "stat", stat)
+			cs[i].SetDiffStat(stat)
 		}
 
 		if err := cs[i].SetMetadata(prs[i]); err != nil {
 			return errors.Wrap(err, "setting changeset metadata")
 		}
-
-		log15.Info("post-pull tasks complete", "changeset", cs[i].Changeset.ID)
 	}
 
 	return nil
+}
+
+func hasGitHubDiffChanged(cs *campaigns.Changeset, pr *github.PullRequest) bool {
+	// If the changeset doesn't have a diffstat, we'll just update regardless.
+	// TODO: should we have the same behaviour if all values are 0?
+	if cs.DiffStatAdded == nil || cs.DiffStatChanged == nil || cs.DiffStatDeleted == nil {
+		return true
+	}
+
+	// If we get an error getting the base or head OID, then we'll just update
+	// no matter what.
+	oldBase, err := cs.BaseRefOid()
+	if err != nil {
+		return true
+	}
+
+	oldHead, err := cs.HeadRefOid()
+	if err != nil {
+		return true
+	}
+
+	return oldBase != pr.BaseRefOid || oldHead != pr.HeadRefOid
 }
 
 // UpdateChangeset updates the given *Changeset in the code host.
