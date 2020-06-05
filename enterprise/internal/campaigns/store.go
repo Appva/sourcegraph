@@ -270,10 +270,10 @@ WITH batch AS (
       external_review_state text,
       external_check_state  text,
       created_by_campaign   boolean,
-	  added_to_campaign     boolean,
-	  diff_stat_added		integer,
-	  diff_stat_changed		integer,
-	  diff_stat_deleted		integer
+      added_to_campaign     boolean,
+      diff_stat_added       integer,
+      diff_stat_changed     integer,
+      diff_stat_deleted     integer
     )
   )
   WITH ORDINALITY
@@ -830,7 +830,7 @@ changed AS (
     external_check_state  = batch.external_check_state,
     created_by_campaign   = batch.created_by_campaign,
 	added_to_campaign     = batch.added_to_campaign,
-	diff_stat_added		  = batch.diff_stat_added,
+	diff_stat_added       = batch.diff_stat_added,
 	diff_stat_changed     = batch.diff_stat_changed,
 	diff_stat_deleted     = batch.diff_stat_deleted
   FROM batch
