@@ -66,6 +66,8 @@
 // 1528395681_lsif_queue_delay.up.sql (342B)
 // 1528395682_lsif_remove_failure_stacktrace.down.sql (467B)
 // 1528395682_lsif_remove_failure_stacktrace.up.sql (454B)
+// 1528395683_add_diffstat_fields_to_changesets.down.sql (207B)
+// 1528395683_add_diffstat_fields_to_changesets.up.sql (240B)
 
 package migrations
 
@@ -1454,6 +1456,46 @@ func _1528395682_lsif_remove_failure_stacktraceUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __1528395683_add_diffstat_fields_to_changesetsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x72\x75\xf7\xf4\xb3\xe6\xe2\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\xce\x48\xcc\x4b\x4f\x2d\x4e\x2d\x29\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x48\xc9\x4c\x4b\x8b\x2f\x2e\x49\x2c\x89\x4f\x4c\x49\x49\x4d\xb1\x26\x57\x37\x44\x29\xf9\xfa\x53\x52\x73\x52\x4b\x40\xfa\xb9\x9c\xfd\x7d\x7d\x3d\x43\xac\xb9\x00\x01\x00\x00\xff\xff\x06\x9b\xc1\xe8\xcf\x00\x00\x00")
+
+func _1528395683_add_diffstat_fields_to_changesetsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395683_add_diffstat_fields_to_changesetsDownSql,
+		"1528395683_add_diffstat_fields_to_changesets.down.sql",
+	)
+}
+
+func _1528395683_add_diffstat_fields_to_changesetsDownSql() (*asset, error) {
+	bytes, err := _1528395683_add_diffstat_fields_to_changesetsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395683_add_diffstat_fields_to_changesets.down.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x2e, 0x8e, 0xe7, 0xc, 0x6a, 0x4c, 0x73, 0x4c, 0x33, 0x12, 0x37, 0xf8, 0x11, 0xd5, 0x6b, 0x4d, 0xcc, 0x5f, 0xe5, 0x9c, 0x94, 0xb9, 0xd5, 0x7b, 0xf3, 0x8f, 0x92, 0x80, 0x75, 0x17, 0x2f, 0xfc}}
+	return a, nil
+}
+
+var __1528395683_add_diffstat_fields_to_changesetsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xac\xcc\xbf\x0a\xc2\x30\x10\x07\xe0\x3d\x4f\xf1\x7b\x8f\x4c\x69\x1b\xe5\x20\x7f\xc0\x9e\xe0\x56\x82\x77\xad\x05\xe9\x60\xee\xfd\x71\x70\x71\xd7\xfd\xe3\x1b\xe2\x99\x8a\x77\x2e\x24\x8e\x17\x70\x18\x52\xc4\xfd\xd1\x8e\x4d\xbb\x5a\x47\x98\x26\x8c\x35\x5d\x73\x01\x9d\x50\x2a\x23\xde\x68\xe6\x19\xb2\xaf\xeb\xd2\xad\xd9\xd2\x44\x54\xb0\x1f\xa6\x9b\xbe\xfc\x0f\xd1\x47\xff\xa5\x12\x7d\xaa\x7d\x57\x6e\xac\x39\x13\x7b\xf7\x0e\x00\x00\xff\xff\x50\xfd\x86\x42\xf0\x00\x00\x00")
+
+func _1528395683_add_diffstat_fields_to_changesetsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__1528395683_add_diffstat_fields_to_changesetsUpSql,
+		"1528395683_add_diffstat_fields_to_changesets.up.sql",
+	)
+}
+
+func _1528395683_add_diffstat_fields_to_changesetsUpSql() (*asset, error) {
+	bytes, err := _1528395683_add_diffstat_fields_to_changesetsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "1528395683_add_diffstat_fields_to_changesets.up.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa0, 0xef, 0x1b, 0x3c, 0xe1, 0xc7, 0xfd, 0x2a, 0x19, 0x81, 0xc0, 0x23, 0x60, 0xd9, 0x71, 0xa8, 0x41, 0xe1, 0x83, 0x60, 0x46, 0x8b, 0x56, 0x24, 0x18, 0x5a, 0xc1, 0x38, 0x6e, 0xa0, 0x15, 0x46}}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1611,6 +1653,8 @@ var _bindata = map[string]func() (*asset, error){
 	"1528395681_lsif_queue_delay.up.sql":                                      _1528395681_lsif_queue_delayUpSql,
 	"1528395682_lsif_remove_failure_stacktrace.down.sql":                      _1528395682_lsif_remove_failure_stacktraceDownSql,
 	"1528395682_lsif_remove_failure_stacktrace.up.sql":                        _1528395682_lsif_remove_failure_stacktraceUpSql,
+	"1528395683_add_diffstat_fields_to_changesets.down.sql":                   _1528395683_add_diffstat_fields_to_changesetsDownSql,
+	"1528395683_add_diffstat_fields_to_changesets.up.sql":                     _1528395683_add_diffstat_fields_to_changesetsUpSql,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.
@@ -1723,6 +1767,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"1528395681_lsif_queue_delay.up.sql":                                      {_1528395681_lsif_queue_delayUpSql, map[string]*bintree{}},
 	"1528395682_lsif_remove_failure_stacktrace.down.sql":                      {_1528395682_lsif_remove_failure_stacktraceDownSql, map[string]*bintree{}},
 	"1528395682_lsif_remove_failure_stacktrace.up.sql":                        {_1528395682_lsif_remove_failure_stacktraceUpSql, map[string]*bintree{}},
+	"1528395683_add_diffstat_fields_to_changesets.down.sql":                   {_1528395683_add_diffstat_fields_to_changesetsDownSql, map[string]*bintree{}},
+	"1528395683_add_diffstat_fields_to_changesets.up.sql":                     {_1528395683_add_diffstat_fields_to_changesetsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory.
