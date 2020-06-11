@@ -251,7 +251,7 @@ func (s GithubSource) LoadChangesets(ctx context.Context, cs ...*Changeset) erro
 
 	for i := range cs {
 		if hasGitHubDiffChanged(cs[i].Changeset, prs[i]) {
-			stat, err := computeGitDiffStat(ctx, cs[i].Repo, prs[i].BaseRefOid, prs[i].HeadRefOid)
+			stat, err := ComputeGitDiffStat(ctx, cs[i].Repo, prs[i].BaseRefOid, prs[i].HeadRefOid)
 			if err != nil {
 				return errors.Wrap(err, "updating changeset diffstat")
 			}

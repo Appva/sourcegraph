@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -284,6 +285,13 @@ func TestCampaigns(t *testing.T) {
 		}, nil
 	}
 	defer func() { repoupdater.MockRepoLookup = nil }()
+
+	git.Mocks.ExecReader = func(args []string) (io.ReadCloser, error) {
+		return os.Open(filepath.Join("testdata", "test.diff"))
+	}
+	defer func() {
+		git.ResetMocks()
+	}()
 
 	var result struct {
 		Changesets []apitest.Changeset
@@ -1236,13 +1244,31 @@ func TestCreateCampaignWithPatchSet(t *testing.T) {
 	}
 	defer func() { git.Mocks.GetCommit = nil }()
 
+	repoupdater.MockRepoLookup = func(args protocol.RepoLookupArgs) (*protocol.RepoLookupResult, error) {
+		return &protocol.RepoLookupResult{
+			Repo: &protocol.RepoInfo{
+				Name: api.RepoName(repo.Name),
+				VCS:  protocol.VCSInfo{URL: repo.URI},
+			},
+		}, nil
+	}
 	git.Mocks.ExecReader = func(args []string) (io.ReadCloser, error) {
 		if len(args) < 1 && args[0] != "diff" {
 			t.Fatalf("gitserver.ExecReader received wrong args: %v", args)
 		}
 		return ioutil.NopCloser(strings.NewReader(testDiff)), nil
 	}
-	defer func() { git.Mocks.ExecReader = nil }()
+	defer func() {
+		git.Mocks.ExecReader = nil
+		repoupdater.MockRepoLookup = nil
+	}()
+	stat, err := repos.ComputeGitDiffStat(ctx, repo, "base", "head")
+	if err != nil {
+		t.Fatalf("ComputeGitDiffStat failed: %v", err)
+	}
+	// TODO: save diffstat onto changeset (we have the job, but not the
+	// changeset), or add logic to the resolver to lazily fill out the diffstat
+	// if it's all null.
 
 	var queryCampaignResponse struct{ Node apitest.Campaign }
 

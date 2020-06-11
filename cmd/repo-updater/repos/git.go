@@ -14,9 +14,9 @@ import (
 	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
 )
 
-// computeGitDiffStat returns the raw output from git diff for the given repo, base,
+// ComputeGitDiffStat returns the raw output from git diff for the given repo, base,
 // and head OID, ready to be fed to diff.NewMultiFileDiffReader().
-func computeGitDiffStat(ctx context.Context, repo *Repo, baseRefOid, headRefOid string) (*diff.Stat, error) {
+func ComputeGitDiffStat(ctx context.Context, repo *Repo, baseRefOid, headRefOid string) (*diff.Stat, error) {
 	// Let's translate our local Repo struct into something we can give to the
 	// gitserver.
 	//
