@@ -378,9 +378,14 @@ func (c *Changeset) SetDiffStat(stat *diff.Stat) {
 		c.DiffStatChanged = nil
 		c.DiffStatDeleted = nil
 	} else {
-		c.DiffStatAdded = &stat.Added
-		c.DiffStatChanged = &stat.Changed
-		c.DiffStatDeleted = &stat.Deleted
+		added := stat.Added
+		c.DiffStatAdded = &added
+
+		changed := stat.Changed
+		c.DiffStatChanged = &changed
+
+		deleted := stat.Deleted
+		c.DiffStatDeleted = &deleted
 	}
 }
 

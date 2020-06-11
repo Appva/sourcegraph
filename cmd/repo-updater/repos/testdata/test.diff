@@ -1,0 +1,71 @@
+diff --git a/cmd/repo-updater/repos/github_test.go b/cmd/repo-updater/repos/github_test.go
+index 7be2214cc2..15e207f1ad 100644
+--- a/cmd/repo-updater/repos/github_test.go
++++ b/cmd/repo-updater/repos/github_test.go
+@@ -4,6 +4,7 @@ import (
+ 	"context"
+ 	"encoding/json"
+ 	"fmt"
++	"io"
+ 	"io/ioutil"
+ 	"net/http"
+ 	"os"
+@@ -13,6 +14,10 @@ import (
+ 	"strings"
+ 	"testing"
+ 
++	"github.com/sourcegraph/sourcegraph/internal/repoupdater"
++	"github.com/sourcegraph/sourcegraph/internal/repoupdater/protocol"
++	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
++
+ 	"github.com/google/go-cmp/cmp"
+ 	"github.com/inconshreveable/log15"
+ 	"github.com/pkg/errors"
+@@ -325,19 +330,22 @@ func TestGithubSource_LoadChangesets(t *testing.T) {
+ 				t.Fatal(err)
+ 			}
+ 
+-			// Override the computeDiffStat function so we don't accidentally
+-			// try to call out to gitserver.
+-			var diffStatCalled int32
+-			githubSrc.computeDiffStat = func(ctx context.Context, repo *Repo, base, head string) (*diff.Stat, error) {
+-				stat := &diff.Stat{
+-					Added:   diffStatCalled*3 + 1,
+-					Changed: diffStatCalled*3 + 2,
+-					Deleted: diffStatCalled*3 + 3,
+-				}
+-				diffStatCalled++
+-
+-				return stat, nil
++			repoupdater.MockRepoLookup = func(args protocol.RepoLookupArgs) (*protocol.RepoLookupResult, error) {
++				return &protocol.RepoLookupResult{
++					Repo: &protocol.RepoInfo{
++						Name: "repo",
++						VCS:  protocol.VCSInfo{URL: "https://example.com/repo/"},
++					},
++				}, nil
++			}
++			git.Mocks.ExecReader = func(args []string) (io.ReadCloser, error) {
++				return ioutil.NopCloser(strings.NewReader(
++					``)), nil
+ 			}
++			defer func() {
++				repoupdater.MockRepoLookup = nil
++				git.ResetMocks()
++			}()
+ 
+ 			ctx := context.Background()
+ 			if tc.err == "" {
+diff --git a/internal/campaigns/types.go b/internal/campaigns/types.go
+index fcd0683935..907260c2f1 100644
+--- a/internal/campaigns/types.go
++++ b/internal/campaigns/types.go
+@@ -384,7 +384,7 @@ func (c *Changeset) SetDiffStat(stat *diff.Stat) {
+ 		c.DiffStatChanged = &changed
+ 
+ 		deleted := stat.Deleted
+-		c.DiffStatDeleted = &Deleted
++		c.DiffStatDeleted = &deleted
+ 	}
+ }
+ 

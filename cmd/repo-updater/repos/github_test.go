@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,9 +14,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sourcegraph/sourcegraph/internal/repoupdater"
+	"github.com/sourcegraph/sourcegraph/internal/repoupdater/protocol"
+	"github.com/sourcegraph/sourcegraph/internal/vcs/git"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/inconshreveable/log15"
 	"github.com/pkg/errors"
+	"github.com/sourcegraph/go-diff/diff"
 	"github.com/sourcegraph/sourcegraph/internal/api"
 	"github.com/sourcegraph/sourcegraph/internal/campaigns"
 	"github.com/sourcegraph/sourcegraph/internal/extsvc"
@@ -306,6 +312,25 @@ func TestGithubSource_LoadChangesets(t *testing.T) {
 			// We need to clear the cache before we run the tests
 			rcache.SetupForTest(t)
 
+			// Set up mocks to prevent the diffstat computation from trying to
+			// use a real gitserver, and so we can control what diff is used to
+			// create the diffstat.
+			repoupdater.MockRepoLookup = func(args protocol.RepoLookupArgs) (*protocol.RepoLookupResult, error) {
+				return &protocol.RepoLookupResult{
+					Repo: &protocol.RepoInfo{
+						Name: "repo",
+						VCS:  protocol.VCSInfo{URL: "https://example.com/repo/"},
+					},
+				}, nil
+			}
+			git.Mocks.ExecReader = func(args []string) (io.ReadCloser, error) {
+				return os.Open(filepath.Join("testdata", "test.diff"))
+			}
+			defer func() {
+				repoupdater.MockRepoLookup = nil
+				git.ResetMocks()
+			}()
+
 			cf, save := newClientFactory(t, tc.name)
 			defer save(t)
 
@@ -337,6 +362,24 @@ func TestGithubSource_LoadChangesets(t *testing.T) {
 
 			if err != nil {
 				return
+			}
+
+			// Check diffstats.
+			for _, cs := range tc.cs {
+				want := &diff.Stat{
+					Added:   19,
+					Changed: 2,
+					Deleted: 11,
+				}
+				have := &diff.Stat{
+					Added:   *cs.DiffStatAdded,
+					Changed: *cs.DiffStatChanged,
+					Deleted: *cs.DiffStatDeleted,
+				}
+
+				if d := cmp.Diff(have, want); d != "" {
+					t.Errorf("unexpected diffstat: %s", d)
+				}
 			}
 
 			meta := make([]*github.PullRequest, 0, len(tc.cs))
@@ -709,4 +752,113 @@ func githubGraphQLFailureMiddleware(cli httpcli.Doer) httpcli.Doer {
 		}
 		return cli.Do(req)
 	})
+}
+
+func TestHasGitHubDiffChanged(t *testing.T) {
+	// Creating pointers from literal integers is annoying. Creating *int32 from
+	// integer literals is extra annoying. Here's a helper.
+	int32Value := func(x int) *int32 {
+		i32 := int32(x)
+		return &i32
+	}
+
+	for name, tc := range map[string]struct {
+		cs   *campaigns.Changeset
+		pr   *github.PullRequest
+		want bool
+	}{
+		"nil added": {
+			cs: &campaigns.Changeset{
+				DiffStatAdded:   nil,
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: int32Value(0),
+			},
+			pr:   &github.PullRequest{},
+			want: true,
+		},
+		"nil changed": {
+			cs: &campaigns.Changeset{
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: nil,
+				DiffStatDeleted: int32Value(0),
+			},
+			pr:   &github.PullRequest{},
+			want: true,
+		},
+		"nil deleted": {
+			cs: &campaigns.Changeset{
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: nil,
+			},
+			pr:   &github.PullRequest{},
+			want: true,
+		},
+		"metadata err": {
+			cs: &campaigns.Changeset{
+				// By not setting metadata, we'll force BaseRefOid() and
+				// HeadRefOid() to return an error, which should result in
+				// hasGitHubDiff() returning true.
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: int32Value(0),
+			},
+			pr:   &github.PullRequest{},
+			want: true,
+		},
+		"different base": {
+			cs: &campaigns.Changeset{
+				Metadata: &github.PullRequest{
+					BaseRefOid: "abc",
+					HeadRefOid: "def",
+				},
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: int32Value(0),
+			},
+			pr: &github.PullRequest{
+				BaseRefOid: "xyz",
+				HeadRefOid: "def",
+			},
+			want: true,
+		},
+		"different head": {
+			cs: &campaigns.Changeset{
+				Metadata: &github.PullRequest{
+					BaseRefOid: "abc",
+					HeadRefOid: "def",
+				},
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: int32Value(0),
+			},
+			pr: &github.PullRequest{
+				BaseRefOid: "abc",
+				HeadRefOid: "xyz",
+			},
+			want: true,
+		},
+		"identical": {
+			cs: &campaigns.Changeset{
+				Metadata: &github.PullRequest{
+					BaseRefOid: "abc",
+					HeadRefOid: "def",
+				},
+				DiffStatAdded:   int32Value(0),
+				DiffStatChanged: int32Value(0),
+				DiffStatDeleted: int32Value(0),
+			},
+			pr: &github.PullRequest{
+				BaseRefOid: "abc",
+				HeadRefOid: "def",
+			},
+			want: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if have := hasGitHubDiffChanged(tc.cs, tc.pr); have != tc.want {
+				t.Errorf("unexpected hasGitHubDiffChanged return value: have %v; want %v", have, tc.want)
+			}
+		})
+	}
 }
