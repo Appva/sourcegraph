@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"sync"
